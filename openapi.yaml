@@ -1,0 +1,602 @@
+openapi: 3.1.0
+
+info:
+  title: Brew Buddy Auth API
+  version: 1.0.0
+  description: |
+    Modern authentication and user management service built with Spring Boot 3.4 and JWT tokens.
+
+    ## Features
+    - JWT-based authentication (access + refresh tokens)
+    - User registration and login
+    - Role-based access control (USER, ADMIN)
+    - User CRUD operations
+    - Profile management
+    - Password management
+
+    ## Authentication
+    Most endpoints require authentication. Include the JWT token in the Authorization header:
+    ```
+    Authorization: Bearer {your-access-token}
+    ```
+
+    ## Getting Started
+    1. Register a new user: `POST /api/auth/register`
+    2. Login to get tokens: `POST /api/auth/login`
+    3. Use the access token in the Authorization header for protected endpoints
+    4. Refresh your token when it expires: `POST /api/auth/refresh`
+  contact:
+    name: Brew Buddy Team
+    email: support@brewbuddy.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8081
+    description: Local Development
+  - url: https://brew-buddy-auth.fly.dev
+    description: Production
+
+tags:
+  - name: Authentication
+    description: Authentication and token management endpoints
+  - name: User Profile
+    description: User profile management endpoints
+  - name: Administration
+    description: Admin-only endpoints for user management (requires ADMIN role)
+
+security:
+  - Bearer Authentication: []
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Create a new user account with username, email, and password. Returns access and refresh tokens.
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              username: johndoe
+              email: john@example.com
+              password: SecurePassword123!
+              firstName: John
+              lastName: Doe
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '400':
+          description: Invalid input - validation errors or username/email already exists
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate with username and password. Returns access and refresh tokens.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: johndoe
+              password: SecurePassword123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '401':
+          description: Invalid credentials
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Use a valid refresh token to obtain a new access token. The refresh token remains valid.
+      operationId: refresh
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            example:
+              refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '401':
+          description: Invalid or expired refresh token
+
+  /api/auth/validate:
+    get:
+      tags:
+        - Authentication
+      summary: Validate token and get user info
+      description: Validate the current access token and return authenticated user information
+      operationId: validate
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Invalid or expired token
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Client-side logout. Server does not invalidate the token (stateless JWT). Client should discard the token.
+      operationId: logout
+      security: []
+      responses:
+        '200':
+          description: Logout message returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully. Please discard your token.
+
+  /api/users/me:
+    get:
+      tags:
+        - User Profile
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile information
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized - invalid or missing token
+
+    put:
+      tags:
+        - User Profile
+      summary: Update current user profile
+      description: Update the authenticated user's profile. Users can only update their own username, email, firstName, and lastName. Roles and status cannot be self-modified.
+      operationId: updateCurrentUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            example:
+              username: johndoe
+              email: john.doe@example.com
+              firstName: John
+              lastName: Doe
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized - invalid or missing token
+
+  /api/admin/dashboard:
+    get:
+      tags:
+        - Administration
+      summary: Get admin dashboard
+      description: Access the admin dashboard. Returns welcome message and admin username.
+      operationId: adminDashboard
+      responses:
+        '200':
+          description: Dashboard accessed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  admin:
+                    type: string
+        '403':
+          description: Forbidden - requires ADMIN role
+
+  /api/admin/users:
+    get:
+      tags:
+        - Administration
+      summary: Get all users
+      description: Retrieve a list of all users in the system
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: List of users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Forbidden - requires ADMIN role
+
+    post:
+      tags:
+        - Administration
+      summary: Create new user
+      description: Admin endpoint to create a new user with specified roles and status
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            example:
+              username: newuser
+              email: newuser@example.com
+              password: SecurePassword123!
+              firstName: New
+              lastName: User
+              emailVerified: false
+              enabled: true
+              roles:
+                - USER
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid input - validation errors or username/email already exists
+        '403':
+          description: Forbidden - requires ADMIN role
+
+  /api/admin/users/{id}:
+    get:
+      tags:
+        - Administration
+      summary: Get user by ID
+      description: Retrieve detailed information about a specific user
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+        '403':
+          description: Forbidden - requires ADMIN role
+
+    put:
+      tags:
+        - Administration
+      summary: Update user
+      description: Update user information including username, email, roles, and status
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid input
+        '404':
+          description: User not found
+        '403':
+          description: Forbidden - requires ADMIN role
+
+    delete:
+      tags:
+        - Administration
+      summary: Delete user
+      description: Permanently delete a user from the system
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted successfully
+        '404':
+          description: User not found
+        '403':
+          description: Forbidden - requires ADMIN role
+
+  /api/admin/users/{id}/change-password:
+    post:
+      tags:
+        - Administration
+      summary: Change user password
+      description: Admin endpoint to reset a user's password
+      operationId: changePassword
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            example:
+              password: NewSecurePassword123!
+              temporary: false
+      responses:
+        '200':
+          description: Password changed successfully
+        '400':
+          description: Invalid password
+        '404':
+          description: User not found
+        '403':
+          description: Forbidden - requires ADMIN role
+
+components:
+  securitySchemes:
+    Bearer Authentication:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter your JWT token obtained from /api/auth/login or /api/auth/register
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Unique username for the account
+        email:
+          type: string
+          format: email
+          description: User's email address
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Account password (minimum 8 characters)
+        firstName:
+          type: string
+          description: User's first name
+        lastName:
+          type: string
+          description: User's last name
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Username or email
+        password:
+          type: string
+          format: password
+          description: Account password
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Valid refresh token
+
+    AuthenticationResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token (valid for 24 hours)
+        refreshToken:
+          type: string
+          description: JWT refresh token (valid for 7 days)
+        tokenType:
+          type: string
+          example: Bearer
+          description: Token type (always "Bearer")
+        expiresIn:
+          type: integer
+          format: int64
+          description: Access token expiration time in seconds
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        username:
+          type: string
+          description: User's username
+        email:
+          type: string
+          format: email
+          description: User's email address
+        firstName:
+          type: string
+          description: User's first name
+        lastName:
+          type: string
+          description: User's last name
+        emailVerified:
+          type: boolean
+          description: Whether email has been verified
+        enabled:
+          type: boolean
+          description: Whether account is enabled
+        roles:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+          description: User's roles (e.g., USER, ADMIN)
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        firstName:
+          type: string
+        lastName:
+          type: string
+        emailVerified:
+          type: boolean
+          default: false
+        enabled:
+          type: boolean
+          default: true
+        roles:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+          description: User roles to assign
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        emailVerified:
+          type: boolean
+        enabled:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: New password
+        temporary:
+          type: boolean
+          default: false
+          description: Whether this is a temporary password
