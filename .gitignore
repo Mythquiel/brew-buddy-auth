@@ -25,3 +25,5 @@ out/
 
 # Docker
 docker-compose.override.yml
+
+src/main/resources/application-local.properties
