@@ -88,7 +88,7 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest(
             "newuser",
             "new@example.com",
-            "password123",
+            "Password123!",
             "New",
             "User"
         );
@@ -127,7 +127,7 @@ class AuthControllerTest {
     @Test
     void shouldLoginSuccessfully() throws Exception {
         // given
-        LoginRequest request = new LoginRequest("testuser", "password123");
+        LoginRequest request = new LoginRequest("testuser", "Password123!");
         given(authenticationService.login(any(LoginRequest.class)))
             .willReturn(authResponse);
 

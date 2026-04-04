@@ -133,7 +133,7 @@ class AuthenticationIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(duplicateRequest)))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.message").value("Username already exists"));
+            .andExpect(jsonPath("$.message").value("Registration failed. Username or email may already be in use."));
     }
 
     @Test

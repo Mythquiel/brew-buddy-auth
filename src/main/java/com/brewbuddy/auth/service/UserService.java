@@ -27,11 +27,9 @@ public class UserService {
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
-        if (userRepository.existsByUsername(request.username())) {
-            throw new IllegalArgumentException("Username already exists");
-        }
-        if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email already exists");
+        if (userRepository.existsByUsername(request.username()) ||
+            userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("User creation failed. Username or email may already be in use.");
         }
 
         User user = new User();

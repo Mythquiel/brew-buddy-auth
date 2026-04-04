@@ -82,7 +82,7 @@ class AdminControllerTest {
         // given
         UserDetails admin = User.builder()
             .username("admin")
-            .password("password")
+            .password("Password123!")
             .authorities("ROLE_ADMIN")
             .build();
 
@@ -101,7 +101,7 @@ class AdminControllerTest {
         CreateUserRequest request = new CreateUserRequest(
             "newuser",
             "new@example.com",
-            "password123",
+            "Password123!",
             "New",
             "User",
             false,
@@ -212,7 +212,7 @@ class AdminControllerTest {
     void shouldChangePassword() throws Exception {
         // given
         ChangePasswordRequest request = new ChangePasswordRequest(
-            "newpassword123",
+            "NewPassword123!",
             false
         );
         willDoNothing().given(userService).changePassword(eq(userId), any(ChangePasswordRequest.class));

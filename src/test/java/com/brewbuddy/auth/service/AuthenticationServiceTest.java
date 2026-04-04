@@ -82,14 +82,14 @@ class AuthenticationServiceTest {
         RegisterRequest request = new RegisterRequest(
             "newuser",
             "new@example.com",
-            "password123",
+            "Password123!",
             "New",
             "User"
         );
 
         given(userRepository.existsByUsername("newuser")).willReturn(false);
         given(userRepository.existsByEmail("new@example.com")).willReturn(false);
-        given(passwordEncoder.encode("password123")).willReturn("$2a$12$hashedpassword");
+        given(passwordEncoder.encode("Password123!")).willReturn("$2a$12$hashedpassword");
         given(userRepository.save(any(User.class))).willReturn(testUser);
         given(userDetailsService.loadUserByUsername("testuser")).willReturn(mock(UserDetails.class));
         given(jwtService.generateAccessToken(any())).willReturn("access-token");
@@ -122,7 +122,7 @@ class AuthenticationServiceTest {
         RegisterRequest request = new RegisterRequest(
             "existinguser",
             "new@example.com",
-            "password123",
+            "Password123!",
             "New",
             "User"
         );
@@ -131,7 +131,7 @@ class AuthenticationServiceTest {
         // when & then
         assertThatThrownBy(() -> authenticationService.register(request))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Username already exists");
+            .hasMessage("Registration failed. Username or email may already be in use.");
 
         verify(userRepository, never()).save(any());
     }
@@ -142,7 +142,7 @@ class AuthenticationServiceTest {
         RegisterRequest request = new RegisterRequest(
             "newuser",
             "existing@example.com",
-            "password123",
+            "Password123!",
             "New",
             "User"
         );
@@ -152,7 +152,7 @@ class AuthenticationServiceTest {
         // when & then
         assertThatThrownBy(() -> authenticationService.register(request))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Email already exists");
+            .hasMessage("Registration failed. Username or email may already be in use.");
 
         verify(userRepository, never()).save(any());
     }
@@ -160,7 +160,7 @@ class AuthenticationServiceTest {
     @Test
     void shouldLoginSuccessfully() {
         // given
-        LoginRequest request = new LoginRequest("testuser", "password123");
+        LoginRequest request = new LoginRequest("testuser", "Password123!");
 
         given(userRepository.findByUsername("testuser")).willReturn(Optional.of(testUser));
         given(userDetailsService.loadUserByUsername("testuser")).willReturn(mock(UserDetails.class));

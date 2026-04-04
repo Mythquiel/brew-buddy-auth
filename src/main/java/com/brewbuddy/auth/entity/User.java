@@ -50,7 +50,7 @@ public class User {
     @Column(nullable = false)
     private Boolean enabled = true;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<UserRole> roles = new HashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
