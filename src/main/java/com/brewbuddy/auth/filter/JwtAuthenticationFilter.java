@@ -2,6 +2,7 @@ package com.brewbuddy.auth.filter;
 
 import com.brewbuddy.auth.service.CustomUserDetailsService;
 import com.brewbuddy.auth.service.JwtService;
+import com.brewbuddy.auth.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(
@@ -39,6 +41,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String jwt = authHeader.substring(7);
+
+            if (tokenBlacklistService.isTokenBlacklisted(jwt)) {
+                logger.debug("Token is blacklisted");
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             final String username = jwtService.extractUsername(jwt);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

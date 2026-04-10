@@ -2,6 +2,7 @@ package com.brewbuddy.auth.controller;
 
 import com.brewbuddy.auth.dto.AuthenticationResponse;
 import com.brewbuddy.auth.dto.LoginRequest;
+import com.brewbuddy.auth.dto.LogoutRequest;
 import com.brewbuddy.auth.dto.RefreshTokenRequest;
 import com.brewbuddy.auth.dto.RegisterRequest;
 import com.brewbuddy.auth.dto.UserResponse;
@@ -121,17 +122,22 @@ public class AuthController {
     @PostMapping("/logout")
     @Operation(
         summary = "Logout user",
-        description = "Client-side logout. Server does not invalidate the token (stateless JWT). Client should discard the token."
+        description = "Invalidate both access and refresh tokens by adding them to the server-side blacklist. Tokens will remain blacklisted until their natural expiration."
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
-            description = "Logout message returned"
+            description = "Logout successful, tokens invalidated"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request - access token is required"
         )
     })
-    public ResponseEntity<Map<String, String>> logout() {
+    public ResponseEntity<Map<String, String>> logout(@Valid @RequestBody LogoutRequest request) {
+        authenticationService.logout(request);
         return ResponseEntity.ok(Map.of(
-            "message", "Logged out successfully. Please discard your token."
+            "message", "Logged out successfully. Your tokens have been invalidated."
         ));
     }
 }

@@ -91,9 +91,8 @@ class AuthenticationServiceTest {
         given(userRepository.existsByEmail("new@example.com")).willReturn(false);
         given(passwordEncoder.encode("Password123!")).willReturn("$2a$12$hashedpassword");
         given(userRepository.save(any(User.class))).willReturn(testUser);
-        given(userDetailsService.loadUserByUsername("testuser")).willReturn(mock(UserDetails.class));
-        given(jwtService.generateAccessToken(any())).willReturn("access-token");
-        given(jwtService.generateRefreshToken(any())).willReturn("refresh-token");
+        given(jwtService.generateAccessToken(any(User.class))).willReturn("access-token");
+        given(jwtService.generateRefreshToken(any(User.class))).willReturn("refresh-token");
 
         // when
         AuthenticationResponse response = authenticationService.register(request);
@@ -163,9 +162,8 @@ class AuthenticationServiceTest {
         LoginRequest request = new LoginRequest("testuser", "Password123!");
 
         given(userRepository.findByUsername("testuser")).willReturn(Optional.of(testUser));
-        given(userDetailsService.loadUserByUsername("testuser")).willReturn(mock(UserDetails.class));
-        given(jwtService.generateAccessToken(any())).willReturn("access-token");
-        given(jwtService.generateRefreshToken(any())).willReturn("refresh-token");
+        given(jwtService.generateAccessToken(any(User.class))).willReturn("access-token");
+        given(jwtService.generateRefreshToken(any(User.class))).willReturn("refresh-token");
 
         // when
         AuthenticationResponse response = authenticationService.login(request);
@@ -205,7 +203,7 @@ class AuthenticationServiceTest {
         given(userDetailsService.loadUserByUsername("testuser")).willReturn(userDetails);
         given(jwtService.isTokenValid("valid-refresh-token", userDetails)).willReturn(true);
         given(userRepository.findByUsername("testuser")).willReturn(Optional.of(testUser));
-        given(jwtService.generateAccessToken(userDetails)).willReturn("new-access-token");
+        given(jwtService.generateAccessToken(any(User.class))).willReturn("new-access-token");
 
         // when
         AuthenticationResponse response = authenticationService.refreshToken(request);

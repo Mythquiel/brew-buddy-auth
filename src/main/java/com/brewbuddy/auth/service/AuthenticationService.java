@@ -2,6 +2,7 @@ package com.brewbuddy.auth.service;
 
 import com.brewbuddy.auth.dto.AuthenticationResponse;
 import com.brewbuddy.auth.dto.LoginRequest;
+import com.brewbuddy.auth.dto.LogoutRequest;
 import com.brewbuddy.auth.dto.RefreshTokenRequest;
 import com.brewbuddy.auth.dto.RegisterRequest;
 import com.brewbuddy.auth.dto.UserResponse;
@@ -28,6 +29,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
     private final AuthenticationManager authenticationManager;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Value("${jwt.expiration-ms}")
     private Long expirationMs;
@@ -56,9 +58,8 @@ public class AuthenticationService {
 
         User savedUser = userRepository.save(user);
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getUsername());
-        String accessToken = jwtService.generateAccessToken(userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
+        String accessToken = jwtService.generateAccessToken(savedUser);
+        String refreshToken = jwtService.generateRefreshToken(savedUser);
 
         return new AuthenticationResponse(
                 accessToken,
@@ -78,9 +79,8 @@ public class AuthenticationService {
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-        String accessToken = jwtService.generateAccessToken(userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
 
         return new AuthenticationResponse(
                 accessToken,
@@ -103,15 +103,24 @@ public class AuthenticationService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String accessToken = jwtService.generateAccessToken(userDetails);
+        // Generate new tokens (implements sliding window - resets the idle timer)
+        String accessToken = jwtService.generateAccessToken(user);
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+
+        // Blacklist the old refresh token to prevent reuse
+        tokenBlacklistService.blacklistToken(request.refreshToken());
 
         return new AuthenticationResponse(
                 accessToken,
-                request.refreshToken(),
+                newRefreshToken,
                 "Bearer",
                 expirationMs / 1000,
                 convertToUserResponse(user)
         );
+    }
+
+    public void logout(LogoutRequest request) {
+        tokenBlacklistService.blacklistBothTokens(request.accessToken(), request.refreshToken());
     }
 
     private UserResponse convertToUserResponse(User user) {
