@@ -2,13 +2,13 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 
 app = "brew-buddy-auth"
-primary_region = "lhr" # London - change to your preferred region
+primary_region = "lhr"
 
 [build]
   dockerfile = "Dockerfile"
 
 [env]
-  SERVER_PORT = "8080"
+  PORT = "8080"
   SPRING_PROFILES_ACTIVE = "prod"
   # JWT Configuration
   JWT_EXPIRATION_MS = "3600000"
