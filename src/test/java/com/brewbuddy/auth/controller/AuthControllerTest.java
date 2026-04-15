@@ -2,6 +2,7 @@ package com.brewbuddy.auth.controller;
 
 import com.brewbuddy.auth.dto.AuthenticationResponse;
 import com.brewbuddy.auth.dto.LoginRequest;
+import com.brewbuddy.auth.dto.LogoutRequest;
 import com.brewbuddy.auth.dto.RefreshTokenRequest;
 import com.brewbuddy.auth.dto.RegisterRequest;
 import com.brewbuddy.auth.dto.UserResponse;
@@ -192,11 +193,14 @@ class AuthControllerTest {
 
     @Test
     void shouldLogout() throws Exception {
-        // given - no setup needed
+        // given
+        LogoutRequest request = new LogoutRequest("access-token", "refresh-token");
 
         // when & then
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/api/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.message").value("Logged out successfully. Please discard your token."));
+            .andExpect(jsonPath("$.message").value("Logged out successfully. Your tokens have been invalidated."));
     }
 }

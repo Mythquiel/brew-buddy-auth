@@ -1,8 +1,10 @@
 package com.brewbuddy.auth.integration;
 
 import com.brewbuddy.auth.dto.LoginRequest;
+import com.brewbuddy.auth.dto.LogoutRequest;
 import com.brewbuddy.auth.dto.RegisterRequest;
 import com.brewbuddy.auth.repository.UserRepository;
+import com.brewbuddy.auth.service.TokenBlacklistService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,9 @@ class AuthenticationIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @MockitoBean
+    private TokenBlacklistService tokenBlacklistService;
 
     @BeforeEach
     void setUp() {
@@ -78,8 +84,12 @@ class AuthenticationIntegrationTest {
             .andExpect(jsonPath("$.email").value("integration@example.com"));
 
         // 4. Logout
+        LogoutRequest logoutRequest = new LogoutRequest(accessToken, refreshToken);
+
         mockMvc.perform(post("/api/auth/logout")
-                .header("Authorization", "Bearer " + accessToken))
+                .header("Authorization", "Bearer " + accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(logoutRequest)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message").exists());
 

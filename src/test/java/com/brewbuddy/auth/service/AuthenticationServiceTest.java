@@ -51,6 +51,9 @@ class AuthenticationServiceTest {
     @Mock
     private AuthenticationManager authenticationManager;
 
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
+
     @InjectMocks
     private AuthenticationService authenticationService;
 
@@ -204,6 +207,7 @@ class AuthenticationServiceTest {
         given(jwtService.isTokenValid("valid-refresh-token", userDetails)).willReturn(true);
         given(userRepository.findByUsername("testuser")).willReturn(Optional.of(testUser));
         given(jwtService.generateAccessToken(any(User.class))).willReturn("new-access-token");
+        given(jwtService.generateRefreshToken(any(User.class))).willReturn("new-refresh-token");
 
         // when
         AuthenticationResponse response = authenticationService.refreshToken(request);
@@ -211,10 +215,11 @@ class AuthenticationServiceTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.accessToken()).isEqualTo("new-access-token");
-        assertThat(response.refreshToken()).isEqualTo("valid-refresh-token");
+        assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
         assertThat(response.user().username()).isEqualTo("testuser");
 
         verify(jwtService).isTokenValid("valid-refresh-token", userDetails);
+        verify(tokenBlacklistService).blacklistToken("valid-refresh-token");
     }
 
     @Test
